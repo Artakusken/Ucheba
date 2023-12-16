@@ -47,9 +47,10 @@ int main() {
      * ПОМЕНЯЙТЕ ДИРЕКТОРИИ!!!!!!!
      */
     // Бывают кракозябли в итоговом файле (если в нём кодировка не ANSI)
-    char text[] = R"(C:\Users\ARTEM\CLionProjects\Ucheba\text.txt)";  // Текст для шифрования
-//    char text[] = R"(C:\Users\ARTEM\CLionProjects\Ucheba\encrypted text.txt)";  // Текст для дешифрования
-    char text_out[] = R"(C:\Users\ARTEM\CLionProjects\Ucheba\7777.txt)";  // Текст вывода (вопросами нельзя назвать файл, поэтому 7ки)
+//    char text[] = R"(../text.txt)";  // Текст для шифрования
+    char text[] = R"(../666.txt)";  // Текст для дешифрования
+    char text_out[] = R"(../7777.txt)";  // Текст вывода (вопросами нельзя назвать файл, поэтому 7ки)
+//    char text_out[] = R"(../666.txt)";  // Текст вывода (вопросами нельзя назвать файл, поэтому 7ки)
     unsigned short encryption_on;
     unsigned short key;
 
@@ -58,8 +59,9 @@ int main() {
     std::wcout << L"Введите ключ шифра (0-65535) \n";
     std::wcin >> key;
 
-    std::wifstream in(text, std::ios::in);
+    std::wifstream in(text);
     std::wofstream out(text_out);
+//    out >> std::noskipws();
     wchar_t abc[] = L"абвгдеёжзийклмнопрстуфхцчшщъыьэюя:;.,?! ";
     wchar_t ABC[] = L"АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ:;.,?! ";
 
@@ -67,8 +69,7 @@ int main() {
         std::wcerr << L"Файл не найден" << std::endl;
         return -100;
     }
-    
-//    std::cout << key << std::endl;
+
     wchar_t encrypted_abc[40];  // Шифруем словарь (один раз посчитали сдвиг для каждого элемента алфавита и можем пользоваться сколько хотим)
     for (unsigned short i = 0; i < 40; i++) {
         encrypted_abc[i] = abc[(i + key) % 40];
@@ -84,68 +85,55 @@ int main() {
     PrintString(encrypted_ABC, 40);
 
     wchar_t current_symbol; // Буква слова, которую шифруем
-    unsigned short c = 0;  // Счётчик длины текста
 
     if (encryption_on) {
         while (!in.eof()) {  // Цикл шифровки в файл
-            wchar_t word[40]{};
-            wchar_t encrypted_word[41]{};
-            in >> word;
-
-            for (unsigned short i = 0; i < StrLen(word); i++) {
-                current_symbol = word[i];
-                if (LowerCase(current_symbol)) {  // Используем алфавит с нижним регистром для шифрования букв нижнего регистра и спец. символов
-                    for (unsigned short j = 0; j < 40; j++) {
-                        if (current_symbol == abc[j]) {
-                            encrypted_word[i] = encrypted_abc[j];
-                            break;
-                        }
-                    }
-                } else if (CapitalCase(current_symbol)) { // Используем алфавит с верхним регистром для шифрования букв верхнего регистра
-                    for (unsigned short j = 0; j < 40; j++) {
-                        if (current_symbol == ABC[j]) {
-                            encrypted_word[i] = encrypted_ABC[j];
-                            break;
-                        }
+            wchar_t s;
+            bool k;
+            k = bool(in.get(s));
+            if (!k) {break;}
+            if (LowerCase(s)) {  // Используем алфавит с нижним регистром для шифрования букв нижнего регистра и спец. символов
+                for (unsigned short j = 0; j < 40; j++) {
+                    if (s == abc[j]) {
+                        current_symbol = encrypted_abc[j];
+                        break;
                     }
                 }
-                else {encrypted_word[i] = current_symbol;} // Любой другой случай (буквы других алфавитов и иные спец. символы)
+            } else if (CapitalCase(s)) { // Используем алфавит с верхним регистром для шифрования букв верхнего регистра
+                for (unsigned short j = 0; j < 40; j++) {
+                    if (s == ABC[j]) {
+                        current_symbol = encrypted_ABC[j];
+                        break;
+                    }
+                }
             }
-            encrypted_word[StrLen(encrypted_word)] = encrypted_abc[39];  // Добавление пробела. Wofstream срезает пробел на конце слова, здесь он восполняется сразу в зашифрованном виде
-            out << encrypted_word;
+            else {current_symbol = s;} // Любой другой случай (буквы других алфавитов и иные спец. символы)
+            out << current_symbol;
         }
     } else {
         while (!in.eof()) {  // Цикл дешифровки в файл
-            wchar_t word[20000]{};  // 20'000 На случай если пробелов вообще нет (например в зашифрованном тексте не было "!", а пробелы должными были получаться от воскл. знаков. Итог - текст остался без пробелов)
-            // wofstream берёт по слову (набор символов от начала/пробела до пробела/конца)
-            wchar_t decrypted_word[20001]{};
-            in >> word;
-            for (unsigned short i = 0; i < StrLen(word); i++) {
-                current_symbol = word[i];
-                if (CapitalCase(current_symbol)) {
-                    for (unsigned short j = 0; j < 40; j++) {
-                        if (current_symbol == encrypted_ABC[j]) {
-                            decrypted_word[i] = ABC[j];
-                            break;
-                        }
-                    }
-                } else if (LowerCase(current_symbol)) {
-                    for (unsigned short j = 0; j < 40; j++) {
-                        if (current_symbol == encrypted_abc[j]) {
-                            decrypted_word[i] = abc[j];
-                            break;
-                        }
+            wchar_t s;
+            bool k;
+            k = bool(in.get(s));
+            if (!k) {break;}
+            if (CapitalCase(s)) {
+                for (unsigned short j = 0; j < 40; j++) {
+                    if (s == encrypted_ABC[j]) {
+                        current_symbol = ABC[j];
+                        break;
                     }
                 }
-                else {decrypted_word[i] = current_symbol;};
+            } else if (LowerCase(s)) {
+                for (unsigned short j = 0; j < 40; j++) {
+                    if (s == encrypted_abc[j]) {
+                        current_symbol = abc[j];
+                        break;
+                    }
+                }
             }
-            decrypted_word[StrLen(decrypted_word)] = abc[39 - (key % 40)]; // Добавление изначального символа (тот что был заменён пробелом).
-            // Wofstream срезает пробел на конце слова, и мы теряем букву, которая была шифрована в пробел. ↑Здесь она восполняется сразу в дешифрованном виде
-            out << decrypted_word;
-            c += StrLen(decrypted_word); // Счёт длины текста
+            else {current_symbol = s;}
+            out << current_symbol;
         }
-        out.seekp(c - 1, std::ios::beg);  // Отходим от конца текста
-        out << L" ";  // "Стираем" лишнюю букву, которая образовалась в ходе восполнения последнего пробела (он впереди всего текста).
     }
     return 0;
 }
