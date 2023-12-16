@@ -1,19 +1,10 @@
 #include "iostream"
 #include "fstream"
 
-unsigned short StrLen(wchar_t* str)
-{
-    int len = 0;
-    while (str[len] != '\0') {
-        len++;
-    }
-    return len;
-}
-
-void PrintString(wchar_t arr[], unsigned short n) {
+void PrintString(char arr[], unsigned short n) {
     std::wcout << "String of length " << n << ": ";
     for (unsigned short i = 0; i < n; i++) {
-        std::wcout << wchar_t(arr[i]) << "";
+        std::wcout << char(arr[i]) << "";
     }
     std::wcout << "\n";
 }
@@ -34,21 +25,21 @@ int main() {
     std::wcin >> key;
 
     // у меня exe-шник в папке поэтому ../
-//        char text[] = R"(../text.txt)";  // Текст для шифрования
-//    char text_out[] = R"(../encrypted.txt)";  // Текст вывода шифрованного текста
-    char text[] = R"(../encrypted.txt)";  // Текст для дешифрования
-    char text_out[] = R"(../decrypted.txt)";  // Текст вывода дешифрованного текста
+    char text[] = R"(../text.txt)";  // Текст для шифрования
+    char text_out[] = R"(../encrypted.txt)";  // Текст вывода шифрованного текста
+//    char text[] = R"(../encrypted.txt)";  // Текст для дешифрования
+//    char text_out[] = R"(../decrypted.txt)";  // Текст вывода дешифрованного текста
 
-    std::wifstream in(text);
-    std::wofstream out(text_out);
-    wchar_t abc[] = L"АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯабвгдеёжзийклмнопрстуфхцчшщъыьэюя:;.,?! ";
+    std::ifstream in(text);
+    std::ofstream out(text_out);
+    char abc[] = "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯабвгдеёжзийклмнопрстуфхцчшщъыьэюя:;.,?! ";
 
     if (!in.is_open()) {
         std::wcerr << L"Файл не найден" << std::endl;
         return -100;
     }
 
-    wchar_t encrypted_abc[73];  // Шифруем словарь (один раз посчитали сдвиг для каждого элемента алфавита и можем пользоваться сколько хотим)
+    char encrypted_abc[73];  // Шифруем словарь (один раз посчитали сдвиг для каждого элемента алфавита и можем пользоваться сколько хотим)
     for (unsigned short i = 0; i < 73; i++) {
         encrypted_abc[i] = abc[(i + key) % 73];
     }
@@ -56,11 +47,11 @@ int main() {
     PrintString(abc, 73); // Полученный сдвиг алфавита
     PrintString(encrypted_abc, 73);
 
-    wchar_t current_symbol; // Буква слова, которую шифруем
+    char current_symbol; // Буква слова, которую шифруем
 
     if (encryption_on) {
         while (!in.eof()) {  // Цикл шифровки в файл
-            wchar_t s;
+            char s;
             bool k;
             bool in_abc = false;
             k = bool(in.get(s));
@@ -83,7 +74,7 @@ int main() {
         }
     } else {
         while (!in.eof()) {  // Цикл дешифровки в файл
-            wchar_t s;
+            char s;
             bool k;
             bool in_abc = false;
             k = bool(in.get(s));
