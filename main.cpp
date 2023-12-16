@@ -2,11 +2,11 @@
 #include "fstream"
 
 void PrintString(char arr[], unsigned short n) {
-    std::wcout << "String of length " << n << ": ";
+    std::cout << "String of length " << n << ": ";
     for (unsigned short i = 0; i < n; i++) {
-        std::wcout << char(arr[i]) << "";
+        std::cout << char(arr[i]) << "";
     }
-    std::wcout << "\n";
+    std::cout << "\n";
 }
 
 
