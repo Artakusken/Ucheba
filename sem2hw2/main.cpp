@@ -9,9 +9,9 @@ struct Point {
 class Ellipse {
     float semi_major_axis, semi_minor_axis = 0;
     float x_offset, y_offset = 0;
-    Point focus_1 = {0, 0};
-    Point focus_2 = {0, 0};
-    Point center = {0, 0};
+    Point focus_1;
+    Point focus_2;
+    Point center;
     float eccentricity = 0;
 
 public:
