@@ -23,6 +23,10 @@ namespace ya {
         ya::LaserPulse *lasers;
         sf::CircleShape laserShape;
 
+        int points;
+        sf::Font font;
+        sf::Text pointsText;
+
         unsigned short n_of_enemies;
         std::vector<ya::EnemyObjects*> enemies;
 
@@ -64,16 +68,25 @@ namespace ya {
             for (unsigned short i=0; i < n_of_enemies; i++) {
                 if (i % 2 == 0) {
                     enemies.push_back(new HostileAsteroid);
-                    enemies[i]->Setup(800, 400, 0, 0, 0.2, 100, "..\\images\\asteroid.png");
+                    enemies[i]->Setup(0, 0, -0.1, 0, 0.2, 100, "..\\images\\asteroid.png");
                 }
                 else if (i % 3 == 0) {
                     enemies.push_back(new SpaceBase);
-                    enemies[i]->Setup(1500, 600, 0, 0, 0.2, 100, "..\\images\\spacestation.png");
+                    enemies[i]->Setup(0, 0, -0.1, 0, 0.2, 1000, "..\\images\\spacestation.png");
                 }
                 else {
                     enemies.push_back(new Asteroid);
-                    enemies[i]->Setup(100, 100, 0, 0, 0.2, 100, "..\\images\\asteroid.png");
+                    enemies[i]->Setup(0, 0, -0.1, 0, 0.2, 100, "..\\images\\asteroid.png");
                 }
+            }
+            srand(time(0));
+            SpawnEnemyObjects();
+        }
+
+        void SpawnEnemyObjects() {
+            for (unsigned short i=0; i < n_of_enemies; i++) {
+                if (enemies[i]->isDestroyed())
+                    enemies[i]->Spawn(window_width + rand() % 800, (rand() % (window_height - int(enemies[i]->getH()*2))) + enemies[i]->getH(), -rand() % 3 / 10.0f - 0.3, 0);
             }
         }
 
@@ -91,10 +104,18 @@ namespace ya {
                 backgroundSprite.setPosition(0, 0);
             }
 
+            if (!font.loadFromFile("..\\images\\arial.ttf"))
+            {
+                std::cout << "Error while loading arial.ttf" << std::endl;
+            }
+            else {
+                points = 0;
+                pointsText.setFont(font);
+            }
+
             lasers = new ya::LaserPulse[40];
             laserShape.setRadius(10);
 
-//            enemies = new ya::EnemyObjects[4]*;
             n_of_enemies = 4;
             SetEnemyObjects();
         }
@@ -140,35 +161,37 @@ namespace ya {
             for (unsigned short i=0; i < n_of_lasers; i++) {
                 if (lasers[i].BehindBorders(window_width, window_height)) {
                     shift++;
+                    points -= 50;
                 }
                 else {
                     lasers[i - shift] = lasers[i];
                 }
             }
             n_of_lasers -= shift;
-
-//            for (unsigned short i=0; i < n_of_lasers; i++) {
-//                std::cout << lasers[i].getX() << " " << lasers[i].getY() << "; ";
-//            }
-//            std::cout << " * " << n_of_lasers << " * \n";
         }
 
         void EnemiesUpdate(float dt) {
+            SpawnEnemyObjects();
             for (unsigned short i=0; i < n_of_enemies; i++) {
                 for (unsigned short j=0; j < n_of_lasers; j++) {
                     if (enemies[i]->CollisionParticles(lasers[j].getX(), lasers[j].getY(), 20, 20)) {
-                        enemies[i]->TakeDamage(120);
-                        std::cout << "1\n";
+                        points += enemies[i]->TakeDamage(120);
                         lasers[j].Destroy();
                     }
                 }
-                if (enemies[i]->CollisionShip(ship.getX(), ship.getY(), ship.getW(), ship.getH(), ship.getAlpha() * acos(-1) / 180)) {
-                    ship.Destroy();
-                    std::cout << "2\n";
+                for (unsigned short c = 0; c < 11; c++) {
+                    if (enemies[i]->CollisionPoint(ship.getCollisionX(c), ship.getCollisionY(c))) {
+                        ship.Destroy();
+                    }
                 }
+
                 bh.BH_Force(*enemies[i]);
                 enemies[i]->Move(dt);
+                enemies[i]->SpecialMove(ship);
+                enemies[i]->BehindBorders(window_width, window_height);
+//                std::cout << enemies[i]->getX() << " ";
             }
+//            std::cout << "\n";
         }
 
         void Update(float dt) {
@@ -178,10 +201,14 @@ namespace ya {
                 ship.decelerate();
                 ship.Move(dt);
                 ship.RotateWithMouse(&app_window);
+                ship.CalculateCollision();
             }
             Particles_Update(dt);
             EnemiesUpdate(dt);
             bh.BH_Force(ship);
+            bh.isTargetReached(window_width, window_height);
+            bh.Move(dt);
+            pointsText.setString(std::to_string(points));
         }
 
         void Particles_Render() {
@@ -277,55 +304,60 @@ namespace ya {
                     app_window.draw(laserShape);
 
 
-                    laserShape.setPosition(ship.getX() - std::abs((ship.getW() / 2) * cosf(ship.getAlpha() * acos(-1) / 180))
-                                                         - std::abs((ship.getH() / 2) * sinf(ship.getAlpha() * acos(-1) / 180)), ship.getY() - std::abs((ship.getH() / 2) * cosf(ship.getAlpha() * acos(-1) / 180))
-                                                                                                                                 - std::abs((ship.getW() / 2) * sinf(ship.getAlpha() * acos(-1) / 180)));
+                    laserShape.setPosition(ship.getX() - std::abs((ship.getW() / 2) * cosf(ship.getRadAlpha()))
+                                                         - std::abs((ship.getH() / 2) * sinf(ship.getRadAlpha())), ship.getY() - std::abs((ship.getH() / 2) * cosf(ship.getRadAlpha()))
+                                                                                                                                 - std::abs((ship.getW() / 2) * sinf(ship.getRadAlpha())));
                     app_window.draw(laserShape);
 
-                    laserShape.setPosition(ship.getX() + std::abs((ship.getW() / 2) * cosf(ship.getAlpha() * acos(-1) / 180))
-                                           + std::abs((ship.getH() / 2) * sinf(ship.getAlpha() * acos(-1) / 180)), ship.getY() - std::abs((ship.getH() / 2) * cosf(ship.getAlpha() * acos(-1) / 180))
-                                                                                                                       - std::abs((ship.getW() / 2) * sinf(ship.getAlpha() * acos(-1) / 180)));
+                    laserShape.setPosition(ship.getX() + std::abs((ship.getW() / 2) * cosf(ship.getRadAlpha()))
+                                           + std::abs((ship.getH() / 2) * sinf(ship.getRadAlpha())), ship.getY() - std::abs((ship.getH() / 2) * cosf(ship.getRadAlpha()))
+                                                                                                                       - std::abs((ship.getW() / 2) * sinf(ship.getRadAlpha())));
                     app_window.draw(laserShape);
 
-                    laserShape.setPosition(ship.getX() + std::abs((ship.getW() / 2) * cosf(ship.getAlpha() * acos(-1) / 180))
-                                           + std::abs((ship.getH() / 2) * sinf(ship.getAlpha() * acos(-1) / 180)), ship.getY() + std::abs((ship.getH() / 2) * cosf(ship.getAlpha() * acos(-1) / 180))
-                                                                          + std::abs((ship.getW() / 2) * sinf(ship.getAlpha() * acos(-1) / 180)));
+                    laserShape.setPosition(ship.getX() + std::abs((ship.getW() / 2) * cosf(ship.getRadAlpha()))
+                                           + std::abs((ship.getH() / 2) * sinf(ship.getRadAlpha())), ship.getY() + std::abs((ship.getH() / 2) * cosf(ship.getRadAlpha()))
+                                                                          + std::abs((ship.getW() / 2) * sinf(ship.getRadAlpha())));
                     app_window.draw(laserShape);
 
-                    laserShape.setPosition(ship.getX() - std::abs((ship.getW() / 2) * cosf(ship.getAlpha() * acos(-1) / 180))
-                                           - std::abs((ship.getH() / 2) * sinf(ship.getAlpha() * acos(-1) / 180)), ship.getY() + std::abs((ship.getH() / 2) * cosf(ship.getAlpha() * acos(-1) / 180))
-                                                                          + std::abs((ship.getW() / 2) * sinf(ship.getAlpha() * acos(-1) / 180)));
+                    laserShape.setPosition(ship.getX() - std::abs((ship.getW() / 2) * cosf(ship.getRadAlpha()))
+                                           - std::abs((ship.getH() / 2) * sinf(ship.getRadAlpha())), ship.getY() + std::abs((ship.getH() / 2) * cosf(ship.getRadAlpha()))
+                                                                          + std::abs((ship.getW() / 2) * sinf(ship.getRadAlpha())));
                     app_window.draw(laserShape);
 
                     laserShape.setRadius(10);
                 }
-
                 if (DEBUG) {
+                    float* aga = ship.getCollisionX();
+                    float* ugu= ship.getCollisionY();
+
                     laserShape.setRadius(2);
                     laserShape.setFillColor(sf::Color(255, 2, 2, 255));
 
                     laserShape.setPosition(ship.getX(), ship.getY());
                     app_window.draw(laserShape);
-
-
-                    laserShape.setPosition(ship.getX() - (ship.getW() / 2) * cosf(ship.getAlpha() * acos(-1) / 180)
-                                            + (ship.getH() / 2) * sinf(ship.getAlpha() * acos(-1) / 180), ship.getY() - (ship.getH() / 2) * cosf(ship.getAlpha() * acos(-1) / 180)
-                              - (ship.getW() / 2) * sinf(ship.getAlpha() * acos(-1) / 180));
+                    laserShape.setPosition(aga[0],ugu[0]);
                     app_window.draw(laserShape);
-
-                    laserShape.setPosition(ship.getX() + (ship.getW() / 2) * cosf(ship.getAlpha() * acos(-1) / 180)
-                                           + (ship.getH() / 2) * sinf(ship.getAlpha() * acos(-1) / 180), ship.getY() - (ship.getH() / 2) * cosf(ship.getAlpha() * acos(-1) / 180)
-                                                                                                                       + (ship.getW() / 2) * sinf(ship.getAlpha() * acos(-1) / 180));
+                    laserShape.setPosition(aga[1],ugu[1]);
                     app_window.draw(laserShape);
-
-                    laserShape.setPosition(ship.getX() +(ship.getW() / 2) * cosf(ship.getAlpha() * acos(-1) / 180)
-                                           - (ship.getH() / 2) * sinf(ship.getAlpha() * acos(-1) / 180), ship.getY() + (ship.getH() / 2) * cosf(ship.getAlpha() * acos(-1) / 180)
-                                                                                                                   + (ship.getW() / 2) * sinf(ship.getAlpha() * acos(-1) / 180));
+                    laserShape.setPosition(aga[2],ugu[2]);
                     app_window.draw(laserShape);
-
-                    laserShape.setPosition(ship.getX() - (ship.getW() / 2) * cosf(ship.getAlpha() * acos(-1) / 180)
-                                           - (ship.getH() / 2) * sinf(ship.getAlpha() * acos(-1) / 180), ship.getY() + (ship.getH() / 2) * cosf(ship.getAlpha() * acos(-1) / 180)
-                                                                                                                   - (ship.getW() / 2) * sinf(ship.getAlpha() * acos(-1) / 180));
+                    laserShape.setPosition(aga[3],ugu[3]);
+                    app_window.draw(laserShape);
+                    laserShape.setPosition(aga[4],ugu[4]);
+                    app_window.draw(laserShape);
+                    laserShape.setPosition(aga[5],ugu[5]);
+                    app_window.draw(laserShape);
+                    laserShape.setPosition(aga[6],ugu[6]);
+                    app_window.draw(laserShape);
+                    laserShape.setPosition(aga[7],ugu[7]);
+                    app_window.draw(laserShape);
+                    laserShape.setPosition(aga[8],ugu[8]);
+                    app_window.draw(laserShape);
+                    laserShape.setPosition(aga[9],ugu[9]);
+                    app_window.draw(laserShape);
+                    laserShape.setPosition(aga[10],ugu[10]);
+                    app_window.draw(laserShape);
+                    laserShape.setPosition(aga[11],ugu[11]);
                     app_window.draw(laserShape);
 
                     laserShape.setRadius(10);
@@ -333,13 +365,14 @@ namespace ya {
             }
             EnemiesRender();
             Particles_Render();
+            app_window.draw(pointsText);
             app_window.display();
         }
 
         void Run() {
             sf::Clock clock;
             app_window.setFramerateLimit(fps_lock);
-            while (app_window.isOpen() and run) {
+            while (app_window.isOpen() and run and !ship.isDestroyed()) {
                 EventHandler();
 
                 clock.restart();
@@ -347,6 +380,8 @@ namespace ya {
 
                 Render();
             }
+            std::cout << "GAME OVER\n";
+            std::cout << "POINTS: " << points;
         }
     };
 }

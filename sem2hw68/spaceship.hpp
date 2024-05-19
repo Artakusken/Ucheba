@@ -21,6 +21,9 @@ namespace ya {
         bool rotate_cw, rotate_acw;  // cw - clockwise, acw - anti-clockwise
         bool destroyed;
 
+        float col_corsx[12];
+        float col_corsy[12];
+
         sf::RectangleShape rectangleShape;
         sf::Texture shipTexture;
         sf::Sprite shipSprite;
@@ -60,12 +63,18 @@ namespace ya {
                 shipSprite.setScale(0.5f, 0.5f);
                 w = shipSprite.getTextureRect().getSize().x * shipSprite.getScale().x;
                 h = shipSprite.getTextureRect().getSize().y * shipSprite.getScale().y;
-                std::cout << w << std::endl;
 
                 shipSprite.setPosition(x, y);
                 shipSprite.setOrigin(w, h);
             }
         }
+
+        void Destroy() {
+            destroyed = true;
+            x = y = -500;
+            vel_x = vel_y = 0;
+        }
+
 
         void Move(float dt) {
             x += vel_x * dt;
@@ -91,10 +100,50 @@ namespace ya {
                      + std::abs((w / 2) * sinf(angle * acos(-1) / 180)) >= win_h + more_space and vel_y > 0) { InverseVelY(vel_y / 1.5f); }
         }
 
+        void CalculateCollision() {
+            float angle_cos = cosf(angle * acos(-1) / 180);
+            float angle_sin = sinf(angle * acos(-1) / 180);
+            col_corsx[0] = x - w / 4 * angle_cos + h / 2 * angle_sin;  // верхняя линия 1
+            col_corsy[0] = y - h / 2 * angle_cos - w / 4 * angle_sin;  // верхняя линия 1
+
+            col_corsx[1] = x + w / 4 * angle_cos + h / 2 * angle_sin;  // верхняя линия 2
+            col_corsy[1] = y - h / 2 * angle_cos + w / 4 * angle_sin;  // верхняя линия 2
+
+            col_corsx[2] = x + h / 2.5f * angle_sin;  // верхняя линия 3 (верхняя середина)
+            col_corsy[2] = y - h / 2.5f * angle_cos;  // верхняя линия 3 (верхняя середина)
+
+            col_corsx[3] = x + w / 4 * angle_cos - h / 2 * angle_sin;  // нижняя линия 1
+            col_corsy[3] = y + h / 2 * angle_cos + w / 4 * angle_sin;  // нижняя линия 1
+
+            col_corsx[4] = x - w / 4 * angle_cos - h / 2 * angle_sin;  // нижняя линия 2
+            col_corsy[4] = y + h / 2 * angle_cos - w / 4 * angle_sin;  // нижняя линия 2
+
+            col_corsx[5] = x - h / 2.5f * angle_sin;  // нижняя линия 3 (нижняя середина)
+            col_corsy[5] = y + h / 2.5f * angle_cos;  // нижняя линия 3 (нижняя середина)
+
+            col_corsx[6] = x + w / 2.5f * angle_cos;  // нос корабля
+            col_corsy[6] = y + w / 2.5f * angle_sin;  // нос корабля
+
+            col_corsx[7] = x - w / 2 * angle_cos;  // зад корабля
+            col_corsy[7] = y - w / 2 * angle_sin;  // зад корабля
+
+            col_corsx[8] = x - w / 2.5f * angle_cos + h / 2.5f * angle_sin;  // лев верх
+            col_corsy[8] = y - h / 2.5f * angle_cos - w / 2.5f * angle_sin;  // лев верх
+
+            col_corsx[9] = x + w / 2 * angle_cos + h / 2 * angle_sin;  // прав верх
+            col_corsy[9] = y - h / 2 * angle_cos + w / 2 * angle_sin;  // прав верх
+
+            col_corsx[10] = x + w / 2 * angle_cos - h / 2 * angle_sin;  // прав ниж
+            col_corsy[10] = y + h / 2 * angle_cos + w / 2 * angle_sin;  // прав ниж
+
+            col_corsx[11] = x - w / 2.5f * angle_cos - h / 2.5f * angle_sin;  // лев ниж
+            col_corsy[11] = y + h / 2.5f * angle_cos - w / 2.5f * angle_sin;  // лев ниж
+        }
+
         bool Shoot(ya::LaserPulse* lasers_array, unsigned short n_of_lasers) {
             if (n_of_lasers < 39) {
                 float radians = angle * acos(-1) / 180;
-                lasers_array[n_of_lasers].Setup(x + w / 2.5 * cosf(radians), y + w / 2.5 * sinf(radians),
+                lasers_array[n_of_lasers].Setup(x + w / 2 * cosf(radians) - 10 * std::abs(sinf(radians)), y + w / 2 * sinf(radians) - 10 * std::abs(cosf(radians)),
                                                 cosf(radians) * 0.5 + vel_x, sinf(radians) * 0.5 + vel_y);
                 return true;
             }
@@ -104,12 +153,10 @@ namespace ya {
         void Rotate() {
             if (rotate_cw) {angle += ROTATION_SPEED;}
             if (rotate_acw)  {angle -= ROTATION_SPEED; }
-//            std::cout << "cos " << cosf(angle * acos(-1) / 180) << " sin " << sinf(angle * acos(-1) / 180) << std::endl;
-        }
+      }
 
         void RotateWithMouse(sf::RenderWindow* win) {
             target_angle = atan2(sf::Mouse::getPosition(*win).y - y, sf::Mouse::getPosition(*win).x - x) * 180 / acos(-1);
-//            std::cout << "angle " << angle << " target angle " << target_angle << std::endl;
             if (abs(angle - target_angle) < 180) {
                 if (angle > target_angle) { angle -= ROTATION_SPEED; }
                 else if (angle < target_angle) { angle += ROTATION_SPEED; }
@@ -186,9 +233,13 @@ namespace ya {
         float getVelX() { return vel_x; }
         float getVelY() { return vel_y; }
         float getAlpha() {return angle; }
-        float isDestroyed() { return destroyed; }
+        float getRadAlpha() {return angle * acos(-1) / 180; }
+        float* getCollisionX() {return col_corsx; }
+        float getCollisionX(unsigned short i) {return col_corsx[i]; }
+        float* getCollisionY() {return col_corsy; }
+        float getCollisionY(unsigned short i) {return col_corsy[i]; }
+        bool isDestroyed() { return destroyed; }
 
-        void Destroy() {destroyed = true;}
         void setVelPX(bool vx) { px = vx; }
         void setVelMX(bool vx) { mx = vx; }
         void setVelPY(bool vy) { py = vy; }

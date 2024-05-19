@@ -3,6 +3,7 @@
 #include <SFML/Graphics.hpp>
 #include <iostream>
 #include "cmath"
+#include "spaceship.hpp"
 
 namespace ya {
     class EnemyObjects {
@@ -11,9 +12,11 @@ namespace ya {
         float w, h; // bh size
         float vel_x, vel_y; // velocity
         float health;
+        float cur_health;
         float scale;
         bool destroyed;
 
+        const float max_vel = 0.4;
         sf::RectangleShape rectangleShape;
         sf::Texture objectTexture;
         sf::Sprite objectSprite;
@@ -28,10 +31,11 @@ namespace ya {
             x = x_cor;
             y = y_cor;
             health = health_amount;
+            cur_health = health_amount;
             vel_x = vx;
             vel_y = vy;
             scale = scale_factor;
-            destroyed = false;
+            destroyed = true;
             w = 50;
             h = 50;
 
@@ -47,11 +51,21 @@ namespace ya {
                 objectSprite.setScale(scale, scale);
                 w = objectSprite.getTextureRect().getSize().x * scale;
                 h = objectSprite.getTextureRect().getSize().y * scale;
-                std::cout << w << std::endl;
 
                 objectSprite.setPosition(x, y);
                 objectSprite.setOrigin(w*2.5, h*2.5);
+                w *= 0.9;
+                h *= 0.9;
             }
+        }
+
+        void Spawn(float x_cor, float y_cor, float vx, float vy) {
+            x = x_cor;
+            y = y_cor;
+            vel_x = vx;
+            vel_y = vy;
+            destroyed = false;
+            cur_health = health;
         }
 
         void Move(float dt) {
@@ -66,13 +80,15 @@ namespace ya {
                 objectSprite.setScale(scale - 1000 / dist, scale - 1000 / dist);
                 w = objectSprite.getTextureRect().getSize().x * objectSprite.getScale().x;
                 h = objectSprite.getTextureRect().getSize().y * objectSprite.getScale().y;
-//                objectSprite.setOrigin(w, h);
+                w *= 0.9;
+                h *= 0.9;
             }
         }
 
         void BehindBorders(int x_border, int y_border) {
-            if ((x < 0 - w) or (x > x_border + w) or (y < 0 - h) or (y > y_border + h)) {
-                destroyed = true;
+            if ((x < 0 - w and vel_x < 0) or (x > x_border + w and vel_x > 0)
+                or (y < 0 - h and vel_y < 0) or (y > y_border + h and vel_y > 0)) {
+                Destroy();
             }
         }
 
@@ -97,27 +113,13 @@ namespace ya {
             return false;
         }
 
-        bool CollisionShip(float other_x, float other_y, float other_w, float other_h, float angle_rad) {
-            float other_lx = other_x - (other_w / 2) * cosf(angle_rad) + (other_h / 2) * sinf(angle_rad);
-            float other_rx = other_x + (other_w / 2) * cosf(angle_rad) + (other_h / 2) * sinf(angle_rad);
-            float other_ty = other_y - (other_h / 2) * cosf(angle_rad) - (other_w / 2) * sinf(angle_rad);
-            float other_by = other_y + (other_h / 2) * cosf(angle_rad) - (other_w / 2) * sinf(angle_rad);
-
+        bool CollisionPoint(float other_x, float other_y) {
             float lx = x - w/2;
             float rx = x + w/2;
             float ty = y - h/2;
             float by = y + h/2;
 
-            if ((other_lx > lx and other_lx < rx) and (other_ty > ty and other_ty < by)) {
-                return true;
-            }
-            else if ((other_rx > lx and other_rx < rx) and (other_ty > ty and other_ty < by)) {
-                return true;
-            }
-            else if ((other_rx > lx and other_rx < rx) and (other_by > ty and other_by < by)) {
-                return true;
-            }
-            else if ((other_lx > lx and other_lx < rx) and (other_by + other_h > ty and other_by + other_h < by)) {
+            if ((other_x > lx and other_x < rx) and (other_y > ty and other_y < by)) {
                 return true;
             }
             return false;
@@ -126,15 +128,24 @@ namespace ya {
         void Destroy() {
             destroyed = true;
             x = y = -20;
-            w = h = 0;
+            vel_x = vel_y = 0;
+            objectSprite.setScale(scale, scale);
+            w = objectSprite.getTextureRect().getSize().x * scale;
+            h = objectSprite.getTextureRect().getSize().y * scale;
+            w *= 0.9;
+            h *= 0.9;
         }
 
-        void TakeDamage(float damage) {
-            health -= damage;
-            if (health < 0) {
+        int TakeDamage(float damage) {
+            cur_health -= damage;
+            if (cur_health < 0) {
                 Destroy();
+                return health;
             }
+            return 0;
         }
+
+        virtual void SpecialMove(ya::Spaceship& ship) = 0;
 
         sf::RectangleShape getShape() {
             return rectangleShape;
@@ -156,18 +167,41 @@ namespace ya {
         void changeVelY(float dvy) { vel_y += dvy; }
     };
 
-    class SpaceBase : public EnemyObjects { // убегает, ещё бьёт если корабль слишком близко (но не факт)
+    class SpaceBase : public EnemyObjects { // убегает, если корабль слишком близко
     public:
         SpaceBase() = default;
+
+        void SpecialMove(ya::Spaceship& ship) override {
+//            if (x > ship->getX()) { laser.changeVelX(10000 / (dist * dist) * gravity_force); }
+//            else { laser.changeVelX(-10000 / (dist * dist) * gravity_force); }
+            float dist = powf(x - ship.getX(), 2) + powf(y - ship.getY(), 2);
+            if (ship.getY() > y and vel_y > -max_vel) { changeVelY((1 / dist) * -300); }
+            else if (vel_y < max_vel) { changeVelY((1 / dist) * 300); }
+//            changeVelY(ship->getVelY() / 100);
+        }
     };
 
     class Asteroid : public EnemyObjects { // просто чел
     public:
         Asteroid() = default;
+
+        void SpecialMove(ya::Spaceship& ship) override {
+
+        }
     };
 
     class HostileAsteroid : public EnemyObjects { // догоняющий тебя негативчик
     public:
         HostileAsteroid() = default;
+
+        void SpecialMove(ya::Spaceship& ship) override {
+            if (!ship.isDestroyed()) {
+                float dist = powf(x - ship.getX(), 2) + powf(y - ship.getY(), 2);
+                if (ship.getY() > y and vel_y < max_vel) { changeVelY((1 / dist) * 300); }
+                else if (vel_y > -max_vel) { changeVelY((1 / dist) * -300); }
+                if (ship.getX() > x and vel_x < max_vel) { changeVelX((1 / dist) * 300); }
+                else if (vel_x > -max_vel) { changeVelX((1 / dist) * -300); }
+            }
+        }
     };
 }
