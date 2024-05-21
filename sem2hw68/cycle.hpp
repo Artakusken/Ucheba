@@ -289,12 +289,6 @@ namespace ya {
             app_window.clear();
             app_window.draw(backgroundSprite);
             app_window.draw(black_hole.getSprite());
-            laserShape.setRadius(2);
-            laserShape.setFillColor(sf::Color(255, 255, 255, 255));
-
-            laserShape.setPosition(black_hole.getX(), black_hole.getY());
-            app_window.draw(laserShape);
-            laserShape.setRadius(laser_radius);
 
             if (!ship.isDestroyed()) {
                 app_window.draw(ship.getSprite());

@@ -104,7 +104,7 @@ namespace ya {
             float angle_cos = cosf(angle * acos(-1) / 180);
             float angle_sin = sinf(angle * acos(-1) / 180);
             col_corsx[0] = x - w / 4 * angle_cos + h / 2 * angle_sin;  // верхняя линия 1
-            col_corsy[0] = y - h / 2 * angle_cos - w / 4 * angle_sin;  // фверхняя линия 1
+            col_corsy[0] = y - h / 2 * angle_cos - w / 4 * angle_sin;  // верхняя линия 1
 
             col_corsx[1] = x + w / 4 * angle_cos + h / 2 * angle_sin;  // верхняя линия 2
             col_corsy[1] = y - h / 2 * angle_cos + w / 4 * angle_sin;  // верхняя линия 2
