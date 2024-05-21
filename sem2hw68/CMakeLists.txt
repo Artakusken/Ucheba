@@ -11,7 +11,7 @@ add_definitions(-DSFML_STATIC)
 include_directories("../liba/SFML/include/")
 link_directories("../liba/SFML/lib/")
 
-#include_directories("ext/SFML/include/")	# добавляем директории
+#include_directories("ext/SFML/include/")
 #include_directories("inc/")
 #link_directories("ext/SFML/lib/")
 

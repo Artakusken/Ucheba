@@ -13,12 +13,31 @@ namespace ya {
     class App {
         int window_width, window_height;
         wchar_t *window_title;
-        float scale;
+        float win_scale;
         bool run = true;
 
         const int more_space = 20;
         const int fps_lock = 120;
+        const float particle_damage = 120;
+        const float HostileAsteroid_health = 100;
+        const float Asteroid_health = 100;
+        const float SpaceBase_health = 1000;
+        const float HostileAsteroid_scale = 0.2;
+        const float Asteroid_scale = 0.2;
+        const float SpaceBase_scale = 0.2;
 
+        const char* Background_image_path = "..\\images\\system.jpg";
+//        const char* Background_image_path = "..\\images\\system.jpg";
+        const char* Font_path = "..\\images\\arial.ttf";
+//        const char* Font_path = "images\\arial.ttf";
+        const char* HostileAsteroid_image_path = "..\\images\\asteroid.png";
+//        const char* HostileAsteroid_image_path = "images\\asteroid.png";
+        const char* SpaceBase_image_path = "..\\images\\spacestation.png";
+//        const char* HostileAsteroid_image_path = "images\\spacestation.png";
+        const char* Asteroid_image_path = "..\\images\\asteroid.png";
+//        const char* HostileAsteroid_image_path = "images\\asteroid.png";
+
+        float laser_radius = 10;
         unsigned short n_of_lasers = 0;
         ya::LaserPulse *lasers;
         sf::CircleShape laserShape;
@@ -32,22 +51,17 @@ namespace ya {
 
         sf::RenderWindow app_window;
         ya::Spaceship ship;
-        ya::BlackHole bh;
+        ya::BlackHole black_hole;
 
         sf::Texture backgroundTexture;
         sf::Sprite backgroundSprite;
     public:
-        App() {
-            window_width = 500;
-            window_height = 500;
-            window_title = L"Window";
-            scale = 1;
-            app_window.create(sf::VideoMode(window_width, window_height), window_title, sf::Style::Fullscreen);
-        }
+        App() = default;
 
         App(wchar_t *title, int resolution=0) {
-            if (!resolution) {window_width=1920; window_height=1080; scale=1;}
-            else {window_width=1280; window_height=720; scale = 0.66666666;}
+            if (!resolution) {window_width=1920; window_height=1080; win_scale=1;}
+            else {window_width=1280; window_height=720; win_scale = 0.66666666;}
+
             window_title = title;
             if (!resolution) {
                 app_window.create(sf::VideoMode(window_width, window_height), window_title, sf::Style::None);
@@ -68,18 +82,18 @@ namespace ya {
             for (unsigned short i=0; i < n_of_enemies; i++) {
                 if (i % 2 == 0) {
                     enemies.push_back(new HostileAsteroid);
-                    enemies[i]->Setup(0, 0, -0.1, 0, 0.2, 100, "..\\images\\asteroid.png");
+                    enemies[i]->Setup(0, 0, -0.1*win_scale, 0, HostileAsteroid_scale * win_scale, HostileAsteroid_health, HostileAsteroid_image_path);
                 }
                 else if (i % 3 == 0) {
                     enemies.push_back(new SpaceBase);
-                    enemies[i]->Setup(0, 0, -0.1, 0, 0.2, 1000, "..\\images\\spacestation.png");
+                    enemies[i]->Setup(0, 0, -0.1*win_scale, 0, SpaceBase_scale * win_scale, SpaceBase_health, SpaceBase_image_path);
                 }
                 else {
                     enemies.push_back(new Asteroid);
-                    enemies[i]->Setup(0, 0, -0.1, 0, 0.2, 100, "..\\images\\asteroid.png");
+                    enemies[i]->Setup(0, 0, -0.1*win_scale, 0, Asteroid_scale * win_scale, Asteroid_health, Asteroid_image_path);
                 }
             }
-            srand(time(0));
+            srand(time(nullptr));
             SpawnEnemyObjects();
         }
 
@@ -91,9 +105,9 @@ namespace ya {
         }
 
         void Setup() {
-            ship.Setup(window_width / 2, window_height / 2, scale);
-            bh.Setup(300, 400, scale);
-            if (!backgroundTexture.loadFromFile("..\\images\\system.jpg")) {
+            ship.Setup(window_width / 2, window_height / 2, win_scale);
+            black_hole.Setup(300, 400, win_scale);
+            if (!backgroundTexture.loadFromFile(Background_image_path)) {
                 std::cout << "Error while loading background texture" << std::endl;
             }
             else {
@@ -104,8 +118,7 @@ namespace ya {
                 backgroundSprite.setPosition(0, 0);
             }
 
-            if (!font.loadFromFile("..\\images\\arial.ttf"))
-            {
+            if (!font.loadFromFile(Font_path)) {
                 std::cout << "Error while loading arial.ttf" << std::endl;
             }
             else {
@@ -114,7 +127,8 @@ namespace ya {
             }
 
             lasers = new ya::LaserPulse[40];
-            laserShape.setRadius(10);
+            laser_radius *= win_scale;
+            laserShape.setRadius(laser_radius);
 
             n_of_enemies = 4;
             SetEnemyObjects();
@@ -146,14 +160,14 @@ namespace ya {
                     if (event.key.code == 36) {run = false;}
                 }
                 if (event.type == sf::Event::MouseButtonPressed and !ship.isDestroyed()) {
-                    n_of_lasers += ship.Shoot(lasers, n_of_lasers);
+                    n_of_lasers += ship.Shoot(lasers, n_of_lasers, win_scale);
                 }
             }
         }
 
         void Particles_Update(float dt) {
             for (unsigned short i=0; i < n_of_lasers; i++) {
-                bh.BH_Force(lasers[i]);
+                black_hole.BH_Force(lasers[i]);
                 lasers[i].Move(dt);
             }
 
@@ -174,8 +188,8 @@ namespace ya {
             SpawnEnemyObjects();
             for (unsigned short i=0; i < n_of_enemies; i++) {
                 for (unsigned short j=0; j < n_of_lasers; j++) {
-                    if (enemies[i]->CollisionParticles(lasers[j].getX(), lasers[j].getY(), 20, 20)) {
-                        points += enemies[i]->TakeDamage(120);
+                    if (enemies[i]->CollisionParticles(lasers[j].getX(), lasers[j].getY(), 20*win_scale, 20*win_scale)) {
+                        points += enemies[i]->TakeDamage(particle_damage);
                         lasers[j].Destroy();
                     }
                 }
@@ -185,13 +199,11 @@ namespace ya {
                     }
                 }
 
-                bh.BH_Force(*enemies[i]);
+                black_hole.BH_Force(*enemies[i]);
                 enemies[i]->Move(dt);
                 enemies[i]->SpecialMove(ship);
                 enemies[i]->BehindBorders(window_width, window_height);
-//                std::cout << enemies[i]->getX() << " ";
             }
-//            std::cout << "\n";
         }
 
         void Update(float dt) {
@@ -200,14 +212,14 @@ namespace ya {
                 ship.accelerate();
                 ship.decelerate();
                 ship.Move(dt);
-                ship.RotateWithMouse(&app_window);
+                ship.RotateWithMouse(app_window);
                 ship.CalculateCollision();
             }
             Particles_Update(dt);
             EnemiesUpdate(dt);
-            bh.BH_Force(ship);
-            bh.isTargetReached(window_width, window_height);
-            bh.Move(dt);
+            black_hole.BH_Force(ship);
+            black_hole.ReachedTarget(window_width, window_height);
+            black_hole.Move(dt);
             pointsText.setString(std::to_string(points));
         }
 
@@ -217,24 +229,25 @@ namespace ya {
 
                 laserShape.setPosition(lasers[i].getX(), lasers[i].getY());
                 laserShape.setScale(lasers[i].getScale(), lasers[i].getScale());
-//                laserShape.setOrigin(10, 10);
                 app_window.draw(laserShape);
                 if (DEBUG) {
+                    float l = laser_radius * 2;
+
                     laserShape.setRadius(2);
                     laserShape.setFillColor(sf::Color(2, 255, 2, 255));
 
                     laserShape.setPosition(lasers[i].getX(), lasers[i].getY());
                     app_window.draw(laserShape);
 
-                    laserShape.setPosition(lasers[i].getX() + 20, lasers[i].getY());
+                    laserShape.setPosition(lasers[i].getX() + l, lasers[i].getY());
                     app_window.draw(laserShape);
 
-                    laserShape.setPosition(lasers[i].getX() + 20, lasers[i].getY() + 20);
+                    laserShape.setPosition(lasers[i].getX() + l, lasers[i].getY() + l);
                     app_window.draw(laserShape);
 
-                    laserShape.setPosition(lasers[i].getX(), lasers[i].getY() + 20);
+                    laserShape.setPosition(lasers[i].getX(), lasers[i].getY() + l);
                     app_window.draw(laserShape);
-                    laserShape.setRadius(10);
+                    laserShape.setRadius(laser_radius);
                 }
             }
         }
@@ -266,7 +279,7 @@ namespace ya {
                                                enemies[i]->getY() + enemies[i]->getH() / 2);
                         app_window.draw(laserShape);
 
-                        laserShape.setRadius(10);
+                        laserShape.setRadius(laser_radius);
                     }
                 }
             }
@@ -275,7 +288,7 @@ namespace ya {
         void Render() {
             app_window.clear();
             app_window.draw(backgroundSprite);
-            app_window.draw(bh.getSprite());
+            app_window.draw(black_hole.getSprite());
             if (!ship.isDestroyed()) {
                 app_window.draw(ship.getSprite());
                 if (DEBUG) {
@@ -294,7 +307,7 @@ namespace ya {
                     laserShape.setPosition(ship.getX() - ship.getW() / 2, ship.getY() + ship.getH() / 2);
                     app_window.draw(laserShape);
 
-                    laserShape.setRadius(10);
+                    laserShape.setRadius(laser_radius);
                 }
                 if (DEBUG) {
                     laserShape.setRadius(2);
@@ -324,7 +337,7 @@ namespace ya {
                                                                           + std::abs((ship.getW() / 2) * sinf(ship.getRadAlpha())));
                     app_window.draw(laserShape);
 
-                    laserShape.setRadius(10);
+                    laserShape.setRadius(laser_radius);
                 }
                 if (DEBUG) {
                     float* aga = ship.getCollisionX();
@@ -360,7 +373,7 @@ namespace ya {
                     laserShape.setPosition(aga[11],ugu[11]);
                     app_window.draw(laserShape);
 
-                    laserShape.setRadius(10);
+                    laserShape.setRadius(laser_radius);
                 }
             }
             EnemiesRender();
@@ -376,7 +389,7 @@ namespace ya {
                 EventHandler();
 
                 clock.restart();
-                Update(5);
+                Update(600/fps_lock);
 
                 Render();
             }

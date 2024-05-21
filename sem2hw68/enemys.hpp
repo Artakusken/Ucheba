@@ -17,7 +17,6 @@ namespace ya {
         bool destroyed;
 
         const float max_vel = 0.4;
-        sf::RectangleShape rectangleShape;
         sf::Texture objectTexture;
         sf::Sprite objectSprite;
     public:
@@ -27,7 +26,9 @@ namespace ya {
             Setup(x_cor, y_cor, vx, vy, scale, health_amount, image_path);
         }
 
-        void Setup(float x_cor, float y_cor, float vx, float vy, float scale_factor, float health_amount, char *image_path) {
+        virtual ~EnemyObjects() {}
+
+        void Setup(float x_cor, float y_cor, float vx, float vy, float scale_factor, float health_amount, const char *image_path) {
             x = x_cor;
             y = y_cor;
             health = health_amount;
@@ -40,9 +41,6 @@ namespace ya {
             h = 50;
 
             if (!objectTexture.loadFromFile(image_path)) {
-                rectangleShape.setPosition(x, y);
-                rectangleShape.setSize(sf::Vector2(w, h));
-                rectangleShape.setFillColor(sf::Color(rand() % 256, rand() % 256, rand() % 256, 255));
                 std::cout << "Error while loading spaceship texture" << std::endl;
             }
             else {
@@ -71,7 +69,6 @@ namespace ya {
         void Move(float dt) {
             x += vel_x * dt;
             y += vel_y * dt;
-            rectangleShape.setPosition(x, y);
             objectSprite.setPosition(x, y);
         }
 
@@ -130,13 +127,11 @@ namespace ya {
             x = y = -20;
             vel_x = vel_y = 0;
             objectSprite.setScale(scale, scale);
-            w = objectSprite.getTextureRect().getSize().x * scale;
-            h = objectSprite.getTextureRect().getSize().y * scale;
-            w *= 0.9;
-            h *= 0.9;
+            w = objectSprite.getTextureRect().getSize().x * scale * 0.9;
+            h = objectSprite.getTextureRect().getSize().y * scale * 0.9;
         }
 
-        int TakeDamage(float damage) {
+        int TakeDamage(float damage) {  // возвращает очки за уничтожение объекта
             cur_health -= damage;
             if (cur_health < 0) {
                 Destroy();
@@ -147,10 +142,6 @@ namespace ya {
 
         virtual void SpecialMove(ya::Spaceship& ship) = 0;
 
-        sf::RectangleShape getShape() {
-            return rectangleShape;
-        }
-
         sf::Sprite getSprite() {
             return objectSprite;
         }
@@ -159,9 +150,9 @@ namespace ya {
         float getY() { return y; }
         float getW() { return w; }
         float getH() { return h; }
-        float isDestroyed() { return destroyed; }
         float getVelX() { return vel_x; }
         float getVelY() { return vel_y; }
+        bool isDestroyed() { return destroyed; }
 
         void changeVelX(float dvx) { vel_x += dvx; }
         void changeVelY(float dvy) { vel_y += dvy; }
@@ -172,12 +163,9 @@ namespace ya {
         SpaceBase() = default;
 
         void SpecialMove(ya::Spaceship& ship) override {
-//            if (x > ship->getX()) { laser.changeVelX(10000 / (dist * dist) * gravity_force); }
-//            else { laser.changeVelX(-10000 / (dist * dist) * gravity_force); }
             float dist = powf(x - ship.getX(), 2) + powf(y - ship.getY(), 2);
             if (ship.getY() > y and vel_y > -max_vel) { changeVelY((1 / dist) * -300); }
             else if (vel_y < max_vel) { changeVelY((1 / dist) * 300); }
-//            changeVelY(ship->getVelY() / 100);
         }
     };
 

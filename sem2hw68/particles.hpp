@@ -16,11 +16,11 @@ namespace ya {
             scale = 1;
         }
 
-        LaserPulse(float x_cor, float y_cor, float velX, float velY) {
-            Setup(x_cor, y_cor, velX, velY);
+        LaserPulse(float x_cor, float y_cor, float velX, float velY, float win_scale) {
+            Setup(x_cor, y_cor, velX, velY, win_scale);
         }
 
-        void Setup(float x_cor, float y_cor, float velX, float velY) {
+        void Setup(float x_cor, float y_cor, float velX, float velY, float win_scale) {
             x = x_cor;
             y = y_cor;
             vel_x = velX;
@@ -29,7 +29,7 @@ namespace ya {
         }
 
         void Destroy() {
-            Setup(-20, -20, 0, 0);
+            Setup(-20, -20, 0, 0, scale);
         }
 
         void Move(float dt) {

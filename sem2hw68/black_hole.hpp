@@ -10,15 +10,15 @@ namespace ya {
         float target_x, target_y; // target coords
         float w, h; // bh size
         float vel_x, vel_y; // velocity
-        const float gravity_force = 250;
 
-        sf::RectangleShape rectangleShape;
+        const float gravity_force = 250;
+        const char* image_path = "..\\images\\black_hole.png";
+//        const char* image_path = "images\\black_hole.png";
+
         sf::Texture bhTexture;
         sf::Sprite bhSprite;
     public:
-        BlackHole() {
-            x = y = 200;
-        };
+        BlackHole() = default;
 
         BlackHole(float x_cor, float y_cor, float scale) {
             Setup(x_cor, y_cor, scale);
@@ -29,21 +29,16 @@ namespace ya {
             y = y_cor;
             target_x = x;
             target_y = y;
-            w = 50;
-            h = 50;
 
-            if (!bhTexture.loadFromFile("..\\images\\black_hole.png")) {
-                rectangleShape.setPosition(x, y);
-                rectangleShape.setSize(sf::Vector2(w, h));
-                rectangleShape.setFillColor(sf::Color(rand() % 256, rand() % 256, rand() % 256, 255));
+            if (!bhTexture.loadFromFile(image_path)) {
                 std::cout << "Error while loading spaceship texture" << std::endl;
             }
             else {
                 bhSprite.setTexture(bhTexture);
                 bhTexture.setSmooth(true);
                 bhSprite.setScale(0.2f * scale, 0.2f * scale);
-                w = bhSprite.getTextureRect().getSize().x * 0.2f;
-                h = bhSprite.getTextureRect().getSize().y * 0.2f;
+                w = bhSprite.getTextureRect().getSize().x * bhSprite.getScale().x;
+                h = bhSprite.getTextureRect().getSize().y * bhSprite.getScale().y;
 
                 bhSprite.setPosition(x, y);
                 bhSprite.setOrigin(w, h);
@@ -53,17 +48,16 @@ namespace ya {
         void Move(float dt) {
             x += vel_x * dt;
             y += vel_y * dt;
-            rectangleShape.setPosition(x, y);
             bhSprite.setPosition(x, y);
         }
 
         void setNewTarget(int win_w, int win_h) {
-            srand(time(0));
-            target_x = rand() % (win_w - int(w)) + w;
+//            srand(time(0));
+            target_x = rand() % win_w / 2.0f;
             target_y = rand() % (win_h - int(h)) + h;
         }
 
-        void isTargetReached(int win_w, int win_h) {
+        void ReachedTarget(int win_w, int win_h) {
             if (target_x > x) {vel_x = 0.05;}
             else {vel_x = -0.05;}
             if (target_y > y) {vel_y = 0.05;}
@@ -117,16 +111,11 @@ namespace ya {
             }
         }
 
-        sf::RectangleShape getShape() {
-            return rectangleShape;
-        }
-
         sf::Sprite getSprite() {
             return bhSprite;
         }
 
         float getX() { return x; }
         float getY() { return y; }
-        float getGravity() { return gravity_force; }
     };
 }
