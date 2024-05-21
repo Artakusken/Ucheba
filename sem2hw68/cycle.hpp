@@ -33,9 +33,9 @@ namespace ya {
         const char* HostileAsteroid_image_path = "..\\images\\asteroid.png";
 //        const char* HostileAsteroid_image_path = "images\\asteroid.png";
         const char* SpaceBase_image_path = "..\\images\\spacestation.png";
-//        const char* HostileAsteroid_image_path = "images\\spacestation.png";
+//        const char* SpaceBase_image_path = "images\\spacestation.png";
         const char* Asteroid_image_path = "..\\images\\asteroid.png";
-//        const char* HostileAsteroid_image_path = "images\\asteroid.png";
+//        const char* Asteroid_image_path = "images\\asteroid.png";
 
         float laser_radius = 10;
         unsigned short n_of_lasers = 0;
@@ -189,7 +189,7 @@ namespace ya {
             for (unsigned short i=0; i < n_of_enemies; i++) {
                 for (unsigned short j=0; j < n_of_lasers; j++) {
                     if (enemies[i]->CollisionParticles(lasers[j].getX(), lasers[j].getY(), laser_radius*2, laser_radius*2)) {
-                        points += enemies[i]->TakeDamage(particle_damage);
+                        points += enemies[i]->TakeDamage(particle_damage) + 50;  // +50 - это компенсация (-50 очков за пулю прошедшую за экран, а при уничтожении пуля переносится за экран)
                         lasers[j].Destroy();
                     }
                 }
@@ -215,8 +215,8 @@ namespace ya {
                 ship.RotateWithMouse(app_window);
                 ship.CalculateCollision();
             }
-            Particles_Update(dt);
             EnemiesUpdate(dt);
+            Particles_Update(dt);
             black_hole.BH_Force(ship);
             black_hole.ReachedTarget(window_width, window_height);
             black_hole.Move(dt);
@@ -289,6 +289,13 @@ namespace ya {
             app_window.clear();
             app_window.draw(backgroundSprite);
             app_window.draw(black_hole.getSprite());
+            laserShape.setRadius(2);
+            laserShape.setFillColor(sf::Color(255, 255, 255, 255));
+
+            laserShape.setPosition(black_hole.getX(), black_hole.getY());
+            app_window.draw(laserShape);
+            laserShape.setRadius(laser_radius);
+
             if (!ship.isDestroyed()) {
                 app_window.draw(ship.getSprite());
                 if (DEBUG) {

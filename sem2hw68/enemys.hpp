@@ -51,7 +51,7 @@ namespace ya {
                 h = objectSprite.getTextureRect().getSize().y * scale;
 
                 objectSprite.setPosition(x, y);
-                objectSprite.setOrigin(w*2.5, h*2.5);
+                objectSprite.setOrigin((w/(2*objectSprite.getScale().x)), (h/(2*objectSprite.getScale().y)));
                 w *= 0.9;
                 h *= 0.9;
             }

@@ -41,7 +41,7 @@ namespace ya {
                 h = bhSprite.getTextureRect().getSize().y * bhSprite.getScale().y;
 
                 bhSprite.setPosition(x, y);
-                bhSprite.setOrigin(w, h);
+                bhSprite.setOrigin(w/(2*bhSprite.getScale().x), h/(2*bhSprite.getScale().y));
             }
         }
 
@@ -49,6 +49,7 @@ namespace ya {
             x += vel_x * dt;
             y += vel_y * dt;
             bhSprite.setPosition(x, y);
+
         }
 
         void setNewTarget(int win_w, int win_h) {
@@ -117,5 +118,7 @@ namespace ya {
 
         float getX() { return x; }
         float getY() { return y; }
+        float getW() { return w; }
+        float getH() { return h; }
     };
 }

@@ -60,11 +60,9 @@ namespace ya {
                 shipSprite.setScale(0.5f*scale, 0.5f*scale);
                 w = shipSprite.getTextureRect().getSize().x * shipSprite.getScale().x;
                 h = shipSprite.getTextureRect().getSize().y * shipSprite.getScale().y;
-                std::cout << w << std::endl;
-                std::cout << shipSprite.getScale().x << std::endl;
 
                 shipSprite.setPosition(x, y);
-                shipSprite.setOrigin(w, h);
+                shipSprite.setOrigin(w/(2*shipSprite.getScale().x), h/(2*shipSprite.getScale().y));
             }
         }
 
@@ -106,7 +104,7 @@ namespace ya {
             float angle_cos = cosf(angle * acos(-1) / 180);
             float angle_sin = sinf(angle * acos(-1) / 180);
             col_corsx[0] = x - w / 4 * angle_cos + h / 2 * angle_sin;  // верхняя линия 1
-            col_corsy[0] = y - h / 2 * angle_cos - w / 4 * angle_sin;  // верхняя линия 1
+            col_corsy[0] = y - h / 2 * angle_cos - w / 4 * angle_sin;  // фверхняя линия 1
 
             col_corsx[1] = x + w / 4 * angle_cos + h / 2 * angle_sin;  // верхняя линия 2
             col_corsy[1] = y - h / 2 * angle_cos + w / 4 * angle_sin;  // верхняя линия 2
@@ -179,7 +177,6 @@ namespace ya {
                 shipSprite.setScale(0.5f*win_scale - 1000 / dist, 0.5f*win_scale - 1000 / dist);
                 w = shipSprite.getTextureRect().getSize().x * shipSprite.getScale().x;
                 h = shipSprite.getTextureRect().getSize().y * shipSprite.getScale().y;
-                shipSprite.setOrigin(w, h);
             }
         }
 
