@@ -188,7 +188,7 @@ namespace ya {
             SpawnEnemyObjects();
             for (unsigned short i=0; i < n_of_enemies; i++) {
                 for (unsigned short j=0; j < n_of_lasers; j++) {
-                    if (enemies[i]->CollisionParticles(lasers[j].getX(), lasers[j].getY(), 20*win_scale, 20*win_scale)) {
+                    if (enemies[i]->CollisionParticles(lasers[j].getX(), lasers[j].getY(), laser_radius*2, laser_radius*2)) {
                         points += enemies[i]->TakeDamage(particle_damage);
                         lasers[j].Destroy();
                     }
